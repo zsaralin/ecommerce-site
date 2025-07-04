@@ -112,7 +112,7 @@ if (event.type === 'checkout.session.completed') {
   // Send confirmation email via Resend
   try {
     await resend.emails.send({
-      from: 'orders@yourdomain.com',
+      from: 'coconutbuncases@gmail.com',
       to: customerEmail,
       subject: `Order Confirmation - ${session.id}`,
       html: `

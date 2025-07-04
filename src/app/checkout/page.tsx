@@ -64,99 +64,111 @@ export default function DeliveryPage() {
     if (text.length <= maxLength) return text
     return text.slice(0, maxLength) + '...'
   }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
+  setError('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+  if (!form.country || !form.firstName || !form.lastName || !form.email) {
+    setError('Please fill out all required fields.')
+    setLoading(false)
+    return
+  }
 
-    if (!form.country || !form.firstName || !form.lastName || !form.email) {
-      setError('Please fill out all required fields.')
-      setLoading(false)
-      return
-    }
+  const code = getCode(form.country)
+  if (!code) {
+    setError('Invalid country selected.')
+    setLoading(false)
+    return
+  }
 
-    const code = getCode(form.country)
-    if (!code) {
-      setError('Invalid country selected.')
-      setLoading(false)
-      return
-    }
+  const shippingInfo: any = {
+    name: `${form.firstName} ${form.lastName}`,
+    email: form.email,
+    address: {
+      line1: form.address,
+      city: form.city,
+      state: form.state,
+      postal_code: form.postalCode,
+      country: code,
+    },
+  }
 
-    const shippingInfo: any = {
-      name: `${form.firstName} ${form.lastName}`,
-      email: form.email,
-      address: {
-        line1: form.address,
-        city: form.city,
-        state: form.state,
-        postal_code: form.postalCode,
-        country: code,
-      },
-    }
+  if (form.phone.trim()) {
+    shippingInfo.phone = form.phone
+  }
+  if (form.apartment.trim()) {
+    shippingInfo.address.line2 = form.apartment
+  }
 
-    if (form.phone.trim()) {
-      shippingInfo.phone = form.phone
-    }
+  try {
+    // Minimal adjusted items for DB (pending order)
+    const adjustedItems = items.map(item => ({
+      id: item.id,
+      quantity: item.quantity, // fixed typo: quantitiy => quantity
+      price: Math.round(getConvertedPrice(item.price, currency)), // cents in current currency
+      description: item.description || '',
+      size: item.size,
+    }))
+    console.log(items)
+    // Full items for Stripe Checkout API (with images + name)
+    const checkoutItems = items.map(item => ({
+      name: item.name,
+      images: [
+  item.image.startsWith('http')
+    ? item.image
+    : `${process.env.NEXT_PUBLIC_BASE_URL}${item.image}`,
+],
+      price: Math.round(getConvertedPrice(item.price, currency)),
+      quantity: item.quantity,
+    }))
 
-    if (form.apartment.trim()) {
-      shippingInfo.address.line2 = form.apartment
-    }
+    const draftId = uuidv4()
 
-    try {
-      // Include description and size in adjusted items, and convert price for currency
-      const adjustedItems = items.map(item => ({
-        id: item.id,
-        quantitiy: item.quantity,
-        price: Math.round(getConvertedPrice(item.price, currency)), // convert to selected currency cents
-        description: item.description,
-        size: item.size,
-      }))
+    await addDoc(collection(db, 'pendingOrders'), {
+      draftId,
+      createdAt: Timestamp.now(),
+      currency: currency.code,
+      shippingInfo,
+      shippingCostCents,
+      shippingMethod: shippingMethod.name,
+      items: adjustedItems,
+      total: grandTotalCents,
+    })
 
-      const draftId = uuidv4()
-
-      await addDoc(collection(db, 'pendingOrders'), {
-        draftId,
-        createdAt: Timestamp.now(),
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: checkoutItems,
         currency: currency.code,
         shippingInfo,
         shippingCostCents,
-        shippingMethod: shippingMethod.name,
-        items: adjustedItems,
-        total: grandTotalCents
-      })
+        shippingName: shippingMethod.name,
+        draftId,
+      }),
+    })
 
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: adjustedItems,
-          currency: currency.code,
-          shippingInfo,
-          shippingCostCents,
-          shippingName: shippingMethod.name,
-          draftId,
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to create checkout session.')
-        setLoading(false)
-        return
-      }
-
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        setError('No checkout URL returned.')
-      }
-    } catch {
-      setError('Unexpected error occurred.')
-    } finally {
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.error || 'Failed to create checkout session.')
       setLoading(false)
+      return
     }
+
+    if (data.url) {
+      window.location.href = data.url
+    } else {
+      setError('No checkout URL returned.')
+    }
+  } catch (error) {
+  console.error('Checkout submit error:', error)
+  setError('Unexpected error occurred. Please check console.')
+  } finally {
+    setLoading(false)
   }
+}
+
 
   return (
     <main className="max-w-5xl mx-auto p-8">

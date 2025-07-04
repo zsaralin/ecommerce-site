@@ -1,11 +1,19 @@
 'use client'
+
 import { useState } from 'react'
 
 export default function FAQ() {
-  const [openDropdown, setOpenDropdown] = useState<null | 'tariffs' | 'shipping'>(null)
+  // Track open state for each dropdown individually
+  const [openDropdowns, setOpenDropdowns] = useState<{ [key: string]: boolean }>({
+    shipping: false,
+    tariffs: false,
+  })
 
-  const toggleDropdown = (name: 'tariffs' | 'shipping') => {
-    setOpenDropdown((prev) => (prev === name ? null : name))
+  const toggleDropdown = (name: 'shipping' | 'tariffs') => {
+    setOpenDropdowns((prev) => ({
+      ...prev,
+      [name]: !prev[name],
+    }))
   }
 
   return (
@@ -17,25 +25,20 @@ export default function FAQ() {
         className="mb-4 cursor-pointer select-none"
         onClick={() => toggleDropdown('shipping')}
       >
-        {/* Added group and hover underline to whole bar */}
         <div className="group px-4 py-3 flex justify-between items-center cursor-pointer select-none">
-          <h2
-            className="text-m group-hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <h2 className="text-m group-hover:underline" onClick={(e) => e.stopPropagation()}>
             Shipping
           </h2>
-          <span>{openDropdown === 'shipping' ? '−' : '+'}</span>
+          <span>{openDropdowns.shipping ? '−' : '+'}</span>
         </div>
 
         <div
           className={`overflow-hidden transition-[max-height,opacity] duration-300 border-t text-gray-700 px-4 space-y-4 ${
-            openDropdown === 'shipping' ? 'max-h-[500px] opacity-100 py-6' : 'max-h-0 opacity-0 py-0'
+            openDropdowns.shipping ? 'max-h-[500px] opacity-100 py-6' : 'max-h-0 opacity-0 py-0'
           }`}
           style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
-          aria-hidden={openDropdown !== 'shipping'}
+          aria-hidden={!openDropdowns.shipping}
         >
-          {/* Optional: add mt-4 to first paragraph for extra spacing */}
           <p className="mt-4">
             <strong>Processing Times</strong>
             <br />
@@ -65,22 +68,18 @@ export default function FAQ() {
         className="mb-4 cursor-pointer select-none"
         onClick={() => toggleDropdown('tariffs')}
       >
-        {/* Added group and hover underline to whole bar */}
         <div className="group px-4 py-3 flex justify-between items-center cursor-pointer select-none">
-          <h2
-            className="text-m group-hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <h2 className="text-m group-hover:underline" onClick={(e) => e.stopPropagation()}>
             Tariffs
           </h2>
-          <span>{openDropdown === 'tariffs' ? '−' : '+'}</span>
+          <span>{openDropdowns.tariffs ? '−' : '+'}</span>
         </div>
         <div
           className={`overflow-hidden transition-[max-height,opacity] duration-300 border-t text-gray-700 px-4 space-y-2 ${
-            openDropdown === 'tariffs' ? 'max-h-40 opacity-100 py-6' : 'max-h-0 opacity-0 py-0'
+            openDropdowns.tariffs ? 'max-h-40 opacity-100 py-6' : 'max-h-0 opacity-0 py-0'
           }`}
           style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
-          aria-hidden={openDropdown !== 'tariffs'}
+          aria-hidden={!openDropdowns.tariffs}
         >
           <p className="mt-4">US Customers will not be affected by tariffs.</p>
         </div>

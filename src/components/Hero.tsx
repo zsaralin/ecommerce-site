@@ -8,16 +8,21 @@ export default function Hero() {
   return (
     <section
       className="
-      max-w-screen
         relative
-        h-[50vh] sm:h-[50vh] md:h-[80vh] 
+        h-[50vh] sm:h-[50vh] md:h-[80vh]
         min-h-[150px] sm:min-h-[250px] md:min-h-[300px]
         w-full
-        bg-fixed bg-center bg-cover bg-no-repeat
+        bg-center bg-no-repeat
         bg-[url('/images/hero.png')]
+        bg-cover
+        bg-scroll md:bg-fixed
+        
         flex items-center justify-center
         text-white text-center
       "
+      style={{
+        backgroundPosition: 'center top', // Shift visible area on mobile to top center
+      }}
     >
       <div>
         <button

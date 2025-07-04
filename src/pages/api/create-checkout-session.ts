@@ -11,25 +11,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { items, currency, shippingInfo, shippingCostCents, shippingName, draftId } = req.body
 
+  // Basic validation
   if (!items || !Array.isArray(items)) {
     return res.status(400).json({ error: 'Invalid items in request.' })
   }
-  if (
-    !shippingInfo ||
-    !shippingInfo.email
-  ) {
+  if (!shippingInfo || !shippingInfo.email) {
     return res.status(400).json({ error: 'Missing shipping information.' })
   }
-  if (
-    typeof shippingCostCents !== 'number' ||
-    !shippingName ||
-    typeof shippingName !== 'string'
-  ) {
+  if (typeof shippingCostCents !== 'number' || !shippingName || typeof shippingName !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid shipping cost or name.' })
   }
 
   try {
-    // Build line items for Stripe Checkout (products + shipping as a separate item)
+    // Debug logging - check line items before creating session
+    console.log('Creating Stripe checkout session with items:', items)
+    console.log('Shipping:', shippingName, shippingCostCents)
+items.forEach((item: any, i: number) => {
+  console.log(`Item ${i} image:`, item.image);
+});    // Build line items for Stripe Checkout — products + shipping as a separate line item
     const line_items = [
       ...items.map((item: any) => ({
         price_data: {
@@ -37,12 +36,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           product_data: {
             name: item.name,
             images: [
-              item.image.startsWith('http')
-                ? item.image
-                : `${process.env.NEXT_PUBLIC_BASE_URL}${item.image}`,
-            ],
+              item.image]
           },
-          unit_amount: item.price,
+          unit_amount: item.price, // price in cents (integer)
         },
         quantity: item.quantity,
       })),
@@ -52,23 +48,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           product_data: {
             name: shippingName,
           },
-          unit_amount: shippingCostCents,
+          unit_amount: shippingCostCents, // shipping cost in cents
         },
         quantity: 1,
       },
     ]
 
-    // Create Stripe Checkout session without shipping info
+    // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       line_items,
-      customer_email: shippingInfo.email ,  // just email for receipt
-        success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      customer_email: shippingInfo.email, // customer email for receipt
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/`,
       metadata: {
-          draft_id: draftId,
-
+        draft_id: draftId,
         shipping_name: shippingInfo.name,
         shipping_phone: shippingInfo.phone || '',
         shipping_address_line1: shippingInfo.address.line1,
@@ -77,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         shipping_state: shippingInfo.address.state || '',
         shipping_postal_code: shippingInfo.address.postal_code,
         shipping_country: shippingInfo.address.country,
-    },
+      },
     })
 
     return res.status(200).json({ url: session.url })
