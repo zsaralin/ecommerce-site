@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 
 export default function SignupPage() {
@@ -24,12 +24,9 @@ export default function SignupPage() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      const user = userCredential.user
-
-      await sendEmailVerification(user)
-      await auth.signOut()
-      router.push('/verify-email')
+      await createUserWithEmailAndPassword(auth, email, password)
+      // User is signed in immediately
+      router.push('/') // change to your desired route
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
         setError('An account with this email already exists.')
@@ -44,7 +41,9 @@ export default function SignupPage() {
       <div className="w-full max-w-md border border-gray-300 rounded px-6 py-10">
         <h1 className="text-2xl font-semibold mb-6 text-center">Create Account</h1>
 
-        {error && <p className="text-gray-800 text-sm mb-4">{error}</p>}
+        {error && (
+          <p className="text-red-600 text-sm mb-4 text-center">{error}</p>
+        )}
 
         <form onSubmit={handleSignup} className="space-y-4">
           <input
@@ -81,7 +80,7 @@ export default function SignupPage() {
           />
           <button
             type="submit"
-  className="bg-[#8819ca] text-white py-2 px-6 rounded hover:bg-[#6f14a8] transition cursor-pointer mx-auto"
+            className="w-full bg-[#8819ca] text-white py-2 rounded hover:bg-[#6f14a8] transition"
           >
             Sign Up
           </button>
@@ -89,17 +88,12 @@ export default function SignupPage() {
 
         <p className="mt-6 text-sm text-center text-gray-700">
           Already have an account?{' '}
-          <span
+          <button
             onClick={() => router.push('/login')}
             className="text-[#8819ca] hover:underline cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') router.push('/login')
-            }}
           >
             Sign In
-          </span>
+          </button>
         </p>
       </div>
     </main>

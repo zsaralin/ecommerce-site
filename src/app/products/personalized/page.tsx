@@ -67,8 +67,8 @@ export default function PersonalizedPage() {
           </ul>
 
           <p className="text-md text-gray-800">
-            Share anything that captures your universe: comfort foods, niche obsessions, dream aesthetics,
-            fav characters...I’ll do my best to bottle that magic into a phone case.
+  Share anything that captures your universe: comfort foods, niche obsessions, dream aesthetics,
+  fav characters… I’ll do my best to bottle that magic into a phone case.
           </p>
 
           {/* VIBE INPUT */}

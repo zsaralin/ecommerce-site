@@ -27,6 +27,17 @@ export function getConvertedPrice(price: number, currency: Currency): number {
       CHF: 1999,
       SEK: 21900,
     },
+    3200: {
+    USD: 3200,   // You can set USD and others or leave undefined/null if only CAD matters
+    CAD: 4000,
+    GBP: 2600,
+    EUR: 2900,
+    AUD: 4300,
+    NZD: 4500,
+    JPY: 4400,
+    CHF: 2800,
+    SEK: 30000,
+  }
   }
 
   const hardcodedPrice = hardcodedPrices[priceKey]?.[currency.code];

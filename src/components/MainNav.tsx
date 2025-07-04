@@ -161,16 +161,16 @@ className="main-nav px-4 py-0 md:px-6 md:pt-6 md:pb-4 flex flex-col items-center
             </button>
 
             {open && user && (
-              <div className="absolute right-0 mt-2 w-32 border rounded z-50 backdrop-blur-md">
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-2 px-4 py-2 w-full text-left text-red-300 hover:text-red-500 hover:underline"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </button>
-              </div>
-            )}
+  <div className="absolute right-0 mt-2 w-48 bg-[#8819ca] shadow-lg z-50 backdrop-blur-md ">
+<button
+  onClick={handleSignOut}
+  className="flex items-center gap-2 px-4 py-2 w-full text-left rounded bg-[var(--color-background)] text-[#6f14a8] transition cursor-pointer"
+>
+  <LogOut className="w-4 h-4" />
+  Sign Out
+</button>
+  </div>
+)}
           </div>
         </div>
       </div>

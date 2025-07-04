@@ -26,7 +26,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center px-4 py-20">
+      <main className=" flex flex-col items-center justify-center px-4 py-20">
         <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
         <p className="text-lg text-gray-600">Your cart is empty now.</p>
       </main>

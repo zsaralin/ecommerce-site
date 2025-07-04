@@ -2,14 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { auth } from '@/lib/firebase'
 import type { Product } from '@/lib/products'
+import { saveCartToFirebase, loadCartFromFirebase } from '@/lib/firebaseCart'
 
 export type CartItem = Product & {
   quantity: number
   size?: string
-  description?: string // ✅ New field for personalized items
+  description?: string
 }
 
 export const CartContext = createContext<{
@@ -22,125 +22,122 @@ export const CartContext = createContext<{
   ) => void
   removeFromCart: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
-updateItem: (item: CartItem, updates: Partial<CartItem>) => void
+  updateItem: (item: CartItem, updates: Partial<CartItem>) => void
   clearCart: () => void
   totalItems: number
   totalPrice: number
 } | undefined>(undefined)
 
-
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
-  const [initialized, setInitialized] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+const itemsRef = React.useRef<CartItem[]>([])
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUserId(user.uid)
-        try {
-          const docRef = doc(db, 'carts', user.uid)
-          const snap = await getDoc(docRef)
-          const firestoreItems: CartItem[] =
-            snap.exists() && snap.data().items ? snap.data().items : []
+useEffect(() => {
+  itemsRef.current = items
+}, [items])
 
-          // Load guest cart
-          let localItems: CartItem[] = []
-          const saved = localStorage.getItem('cart')
-          if (saved) {
-            try {
-              localItems = JSON.parse(saved)
-            } catch {
-              localItems = []
-            }
-          }
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      setUserId(user.uid)
+      setIsInitialized(false)
+      setIsLoading(true)
 
-          // Merge logic using id + size + description as key
-          const mergedItemsMap = new Map<string, CartItem>()
-          ;[...firestoreItems, ...localItems].forEach((item) => {
-            const key = `${item.id}_${item.size ?? ''}_${item.description ?? ''}`
-            if (mergedItemsMap.has(key)) {
-              const existing = mergedItemsMap.get(key)!
-              mergedItemsMap.set(key, {
-                ...item,
-                quantity: existing.quantity + item.quantity,
-              })
+      try {
+        const firestoreItems = (await loadCartFromFirebase(user.uid)) ?? []
+
+        // Merge local items from ref with Firestore cart
+        const localItems = itemsRef.current
+
+        if (localItems.length === 0) {
+          setItems(firestoreItems)
+        } else {
+          const mergedItems = [...firestoreItems]
+
+          localItems.forEach((localItem) => {
+            if (localItem.description) {
+              // Personalized case: add separately
+              mergedItems.push(localItem)
             } else {
-              mergedItemsMap.set(key, item)
+              // Non-personalized: merge quantity if same id and size and no description
+              const existingIndex = mergedItems.findIndex(
+                (item) =>
+                  item.id === localItem.id &&
+                  item.size === localItem.size &&
+                  !item.description
+              )
+              if (existingIndex !== -1) {
+                mergedItems[existingIndex] = {
+                  ...mergedItems[existingIndex],
+                  quantity: mergedItems[existingIndex].quantity + localItem.quantity,
+                }
+              } else {
+                mergedItems.push(localItem)
+              }
             }
           })
 
-          const mergedItems = Array.from(mergedItemsMap.values())
-          await setDoc(docRef, { items: mergedItems }, { merge: true })
-          localStorage.removeItem('cart')
           setItems(mergedItems)
-        } catch (err) {
-          console.error('Failed to load or merge cart on login:', err)
-          setItems([])
         }
-      } else {
-        setUserId(null)
-        const saved = localStorage.getItem('cart')
-        if (saved) {
-          try {
-            setItems(JSON.parse(saved))
-          } catch {
-            localStorage.removeItem('cart')
-            setItems([])
-          }
-        } else {
-          setItems([])
-        }
+      } catch (err) {
+        console.error('[Cart] Failed to fetch Firestore cart:', err)
+        setItems([])
+      } finally {
+        setIsInitialized(true)
+        setIsLoading(false)
       }
-      setInitialized(true)
-    })
+    } else {
+      setUserId(null)
+      setIsInitialized(false)
+      setIsLoading(false)
+      setItems([]) // Clear cart on logout
+    }
+  })
 
-    return () => unsubscribe()
-  }, [])
+  return () => unsubscribe()
+}, [])
 
   useEffect(() => {
-    if (!initialized) return
+    if (!userId || !isInitialized || isLoading) return
 
-    if (userId) {
-      const ref = doc(db, 'carts', userId)
-      setDoc(ref, { items }, { merge: true })
-        .then(() => console.log('[Cart] saved to Firestore:', items))
-        .catch((err) => console.error('[Cart] failed saving:', err))
-    } else {
-      try {
-        localStorage.setItem('cart', JSON.stringify(items))
-        console.log('[Cart] saved to localStorage:', items)
-      } catch (e) {
-        console.error('[Cart] failed to save to localStorage:', e)
-      }
-    }
-  }, [items, initialized, userId])
+    console.log('hey, ', items)
+    saveCartToFirebase(userId, items)
+      .then(() => console.log('[Cart] Saved to Firestore:', items))
+      .catch((err) => console.error('[Cart] Failed to save to Firestore:', err))
+  }, [items, userId, isInitialized, isLoading])
 
   function addToCart(
-    product: Product,
-    quantity = 1,
-    size?: string,
-    options?: { description?: string }
-  ) {
-    const description = options?.description?.trim()
-
-    setItems((currItems) => {
-      const existing = currItems.find(
-        (i) =>
-          i.id === product.id &&
-          i.size === size &&
-          i.description === description
+  product: Product,
+  quantity = 1,
+  size?: string,
+  options?: { description?: string }
+) {
+  const description = options?.description?.trim()
+  setItems((currItems) => {
+    const existing = currItems.find(
+      (i) =>
+        i.id === product.id &&
+        i.size === size &&
+        i.description === description
+    )
+    if (existing) {
+      return currItems.map((i) =>
+        i === existing ? { ...i, quantity: i.quantity + quantity } : i
       )
+    } else {
+      // Build new item WITHOUT description if undefined or empty
+      const newItem: CartItem = { ...product, quantity }
+      if (size) newItem.size = size
+      if (description) newItem.description = description // only add if truthy
 
-      if (existing) {
-        return currItems.map((i) =>
-          i === existing ? { ...i, quantity: i.quantity + quantity } : i
-        )
-      } else {
-        return [...currItems, { ...product, quantity, size, description }]
-      }
-    })
-  }
+      return [...currItems, newItem]
+    }
+  })
+}
+
 
   function removeFromCart(productId: string) {
     setItems((currItems) => currItems.filter((i) => i.id !== productId))
@@ -152,43 +149,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       currItems.map((i) => (i.id === productId ? { ...i, quantity } : i))
     )
   }
-function updateItem(item: CartItem, updates: Partial<CartItem>) {
-  setItems((currItems) =>
-    currItems.map((i) =>
-      i.id === item.id &&
-      i.size === item.size &&
-      i.description === item.description
-        ? { ...i, ...updates }
-        : i
+
+  function updateItem(item: CartItem, updates: Partial<CartItem>) {
+    setItems((currItems) =>
+      currItems.map((i) =>
+        i.id === item.id &&
+        i.size === item.size &&
+        i.description === item.description
+          ? { ...i, ...updates }
+          : i
+      )
     )
-  )
-}
+  }
+
   function clearCart() {
     setItems([])
-    if (!userId) {
-      localStorage.removeItem('cart')
-    }
   }
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-  const totalPrice = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  )
+  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   return (
- <CartContext.Provider
-  value={{
-    items,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    updateItem, // ✅ include this
-    clearCart,
-    totalItems,
-    totalPrice,
-  }}
->
+    <CartContext.Provider
+      value={{
+        items,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        updateItem,
+        clearCart,
+        totalItems,
+        totalPrice,
+      }}
+    >
       {children}
     </CartContext.Provider>
   )
