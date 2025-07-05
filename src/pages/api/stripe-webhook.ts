@@ -9,15 +9,26 @@ export const config = {
 }
 
 if (!admin.apps.length) {
+  const projectId = process.env.FIREBASE_PROJECT_ID
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+
+  if (!projectId || !clientEmail || !privateKey) {
+    console.error('Missing Firebase env vars')
+    throw new Error('Firebase config is incomplete')
+  }
+
   admin.initializeApp({
     credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+      projectId,
+      clientEmail,
+      privateKey,
     }),
   })
 }
 
+const testSnap = await admin.firestore().collection('pendingOrders').limit(1).get()
+console.log('Test Firestore read docs:', testSnap.docs.length)
 const db = admin.firestore()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {})
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string
@@ -54,14 +65,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: `Webhook Error: ${err.message}` })
   }
 if (event.type === 'checkout.session.completed') {
-  const session = event.data.object as Stripe.Checkout.Session
+  const sessionId = (event.data.object as Stripe.Checkout.Session).id
+
+  // Re-fetch the session to ensure metadata is present
+  const session = await stripe.checkout.sessions.retrieve(sessionId)
+
+  console.log('Retrieved session with metadata:', session.metadata)
+
   const metadata = session.metadata || {}
   const draftId = metadata.draft_id
 
   if (!draftId) {
-    console.error('No draft ID in metadata.')
+    console.error('No draft ID in metadata.', metadata)
     return res.status(400).end()
   }
+
 
   const draftRef = db.collection('pendingOrders').doc(draftId)
   const draftSnap = await draftRef.get()

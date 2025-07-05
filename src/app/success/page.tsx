@@ -26,9 +26,14 @@ function SuccessPageContent() {
   }, [context, searchParams, hasCleared])
 
   return (
-    <main className="flex flex-col items-center justify-center px-4 py-15">
-      <h1 className="text-3xl font-bold mb-4">Payment Successful!</h1>
-      <p className="mb-6">Thank you for your purchase.</p>
+    <main className="flex flex-col items-center justify-center px-4 py-20 text-center">
+      <h1 className="text-2xl font-bold mb-4 text-[#1c1c1c]">Thank you for your order!</h1>
+      <p className="text-m mb-2 text-gray-700">
+        A confirmation email has been sent to your inbox.
+      </p>
+      <p className="text-sm text-gray-500 mb-6">
+        You’ll receive updates when your order is being prepared and shipped.
+      </p>
       <button
         onClick={() => router.push('/')}
         className="px-6 py-3 bg-[#8819ca] text-white rounded font-semibold cursor-pointer hover:bg-[#6e148f] transition"

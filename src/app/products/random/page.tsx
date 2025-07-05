@@ -6,11 +6,13 @@ import { useCart } from '@/context/CartContext'
 import { useCurrency } from '@/context/CurrencyContext'
 import { getConvertedPrice } from '@/lib/pricing'
 import { phoneModels } from '@/lib/phoneModels'
+import { useRouter } from 'next/navigation'
 
 export default function RandomPage() {
   const product = products.find((p) => p.id === 'random')
   const { addToCart, clearCart } = useCart()
   const { currency } = useCurrency()
+const router = useRouter()
 
   const [quantity, setQuantity] = useState(1)
   const [phoneModel, setPhoneModel] = useState(phoneModels[0])
@@ -22,12 +24,16 @@ export default function RandomPage() {
   if (!product) return <div>Product not found.</div>
   const convertedPrice = getConvertedPrice(product.price, currency)
 
-  const handleBuyNow = () => {
-    clearCart()                  // Empty cart first
-    addToCart(product, quantity, phoneModel) // Add current item
-    window.location.href = '/checkout'       // Redirect to checkout
-  }
+const handleBuyNow = () => {
+  if (!phoneModel) return
 
+  clearCart()
+  addToCart(product, quantity, phoneModel)
+
+  setTimeout(() => {
+    router.push('/checkout')
+  }, 50)
+}
   return (
     <main className="max-w-5xl mx-auto p-8">
       <div className="flex flex-col md:flex-row gap-12 items-center">

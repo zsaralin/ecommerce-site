@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { items, currency, shippingInfo, shippingCostCents, shippingName, draftId } = req.body
-
+  
   // Basic validation
   if (!items || !Array.isArray(items)) {
     return res.status(400).json({ error: 'Invalid items in request.' })
@@ -29,31 +29,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 items.forEach((item: any, i: number) => {
   console.log(`Item ${i} image:`, item.image);
 });    // Build line items for Stripe Checkout — products + shipping as a separate line item
-    const line_items = [
-      ...items.map((item: any) => ({
-        price_data: {
-          currency: currency.toLowerCase(),
-          product_data: {
-            name: item.name,
-            images: [
-              item.image]
-          },
-          unit_amount: item.price, // price in cents (integer)
-        },
-        quantity: item.quantity,
-      })),
-      {
-        price_data: {
-          currency: currency.toLowerCase(),
-          product_data: {
-            name: shippingName,
-          },
-          unit_amount: shippingCostCents, // shipping cost in cents
-        },
-        quantity: 1,
-      },
-    ]
+   const line_items = [
+  ...items.map((item: any) => {
+    const productData: any = { name: item.name }
+    if (item.image) {
+      productData.images = [item.image]
+    }
 
+    return {
+      price_data: {
+        currency: currency.toLowerCase(),
+        product_data: productData,
+        unit_amount: item.price,
+      },
+      quantity: item.quantity,
+    }
+  }),
+  {
+    price_data: {
+      currency: currency.toLowerCase(),
+      product_data: {
+        name: shippingName, // no image
+      },
+      unit_amount: shippingCostCents,
+    },
+    quantity: 1,
+  },
+]
+console.log('draft' , draftId)
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

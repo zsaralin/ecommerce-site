@@ -6,11 +6,13 @@ import { useCart } from '@/context/CartContext'
 import { useCurrency } from '@/context/CurrencyContext'
 import { getConvertedPrice } from '@/lib/pricing'
 import {phoneModels} from '@/lib/phoneModels'
+import { useRouter } from 'next/navigation'
 
 export default function PersonalizedPage() {
   const product = products.find((p) => p.id === 'personalized')
   const { addToCart, clearCart } = useCart()
   const { currency } = useCurrency()
+const router = useRouter()
 
   const [quantity, setQuantity] = useState(1)
   const [phoneModel, setPhoneModel] = useState('')
@@ -24,19 +26,16 @@ export default function PersonalizedPage() {
 
   const convertedPrice = getConvertedPrice(product.price, currency)
 
-  const handleBuyNow = () => {
-    if (!phoneModel || !vibeInput.trim()) return
+const handleBuyNow = () => {
+  if (!phoneModel || !vibeInput.trim()) return
 
-    // Clear cart first
-    clearCart()
+  clearCart()
+  addToCart(product, quantity, phoneModel, { description: vibeInput })
 
-    // Add the current product to the now-empty cart
-    addToCart(product, quantity, phoneModel, { description: vibeInput })
-
-    // Redirect to checkout page
-    window.location.href = '/checkout'
-  }
-
+  setTimeout(() => {
+    router.push('/checkout')
+  }, 50)
+}
   return (
     <div className="p-6 lg:p-12 max-w-6xl mx-auto">
       <div className="flex flex-col lg:flex-row gap-10 items-start">
