@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
-import { useCart } from '@/context/CartContext' // ✅ update to your actual path
+import { useCart } from '@/context/CartContext' // update to your actual path
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -33,6 +33,7 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password)
       setSignedIn(true) // flag to wait for cart sync
     } catch (err: any) {
+      // Map Firebase errors to friendly messages
       switch (err.code) {
         case 'auth/user-not-found':
           setError('No account found with this email.')
@@ -47,7 +48,8 @@ export default function LoginPage() {
           setError('This user account has been disabled.')
           break
         default:
-          setError(err.message || 'Failed to sign in.')
+          setError('Failed to sign in. Please try again.')
+          console.error('Sign in error:', err)
       }
     }
   }
@@ -64,7 +66,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md border border-gray-300 rounded px-6 py-10">
         <h1 className="text-2xl font-semibold mb-6 text-center">Sign In</h1>
 
-        {error && <p className="text-sm mb-4 text-center">{error}</p>}
+        {error && (
+          <p className="text-red-600 text-sm mb-4 text-center">{error}</p>
+        )}
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <input
@@ -75,7 +79,6 @@ export default function LoginPage() {
             className="w-full px-4 py-2 border rounded"
             required
             autoComplete="email"
-            
           />
           <input
             type="password"

@@ -68,13 +68,20 @@ const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault()
   setLoading(true)
   setError('')
-
-  if (!form.country || !form.firstName || !form.lastName || !form.email) {
-    setError('Please fill out all required fields.')
-    setLoading(false)
-    return
-  }
-
+if (
+  !form.country ||
+  !form.firstName.trim() ||
+  !form.lastName.trim() ||
+  !form.email.trim() ||
+  !form.address.trim() ||
+  !form.city.trim() ||
+  !form.state.trim() ||
+  !form.postalCode.trim()
+) {
+  setError('Please fill out all required fields.')
+  setLoading(false)
+  return
+}
   const code = getCode(form.country)
   if (!code) {
     setError('Invalid country selected.')

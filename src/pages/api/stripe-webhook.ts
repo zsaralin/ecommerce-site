@@ -94,6 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const currency = (session.currency || 'USD').toUpperCase()
     const customerEmail = session.customer_email || ''
     const items = Array.isArray(draftData.items) ? draftData.items : []
+    const shippingCostCents = draftData.shippingCostCents || 0
 const orderDoc = await db.collection('orders').doc(session.id).get()
 if (!orderDoc.exists) {
     await db.collection('orders').doc(session.id).set({
@@ -108,59 +109,75 @@ if (!orderDoc.exists) {
 
     try {
         console.log('Sending confirmation email...')
+        const shippingCost = Number(metadata.shipping_cost_cents) || 0;
+const totalAmount = Number(session.amount_total) || 0;
 await resend.emails.send({
-  from: 'info@coconutbuncases.com',
+  from: 'Coconut Bun Cases <no-reply@coconutbuncases.com>',
   to: customerEmail,
-  subject: 'Order Confirmation',
+  subject: `Order Confirmation`,
   html: `
-    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
-      <h2 style="color: #8819ca;">Thank you for your order!</h2>
-      <p>Here’s a summary of your purchase:</p>
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr>
-            <th align="left">Item</th>
-            <th align="center">Qty</th>
-            <th align="right">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${items
-            .map(
-              (item: any) => `
-              <tr style="border-bottom: 1px solid #ddd; padding: 10px 0;">
-                <td style="padding: 10px 0;">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;" />
-                    <div>
-                      <div style="font-weight: bold;">${item.name}</div>
-                      ${item.description ? `<div style="font-size: 12px; color: #555;">${item.description}</div>` : ''}
-                      ${item.size ? `<div style="font-size: 12px; color: #555;">Size: ${item.size}</div>` : ''}
-                    </div>
-                  </div>
-                </td>
-                <td align="center">${item.quantity}</td>
-                <td align="right">${(item.price / 100).toFixed(2)} ${currency}</td>
-              </tr>`
-            )
-            .join('')}
-        </tbody>
-      </table>
-
-      <p style="margin-top: 24px;"><strong>Total:</strong> ${(session.amount_total! / 100).toFixed(2)} ${currency}</p>
-
-      <p><strong>Shipping to:</strong><br/>
-        ${metadata.shipping_name}<br/>
-        ${metadata.shipping_address_line1}<br/>
-        ${metadata.shipping_address_line2 || ''}<br/>
-        ${metadata.shipping_city}, ${metadata.shipping_state} ${metadata.shipping_postal_code}<br/>
-        ${metadata.shipping_country}
+    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px;">
+      <h2 style="color: #8819ca; margin-bottom: 0;">Thank you for your purchase!</h2>
+      <p style="margin-top: 4px; font-size: 16px; color: #555;">
+        We’re excited to get your order ready. Here’s a quick summary:
       </p>
 
-      <p style="font-size: 12px; color: #888;">If you have any questions, feel free to reply to this email.</p>
+      <ul style="list-style: none; padding: 0; margin-top: 20px;">
+        ${items.map(item => `
+          <li style="display: flex; gap: 25px; margin-bottom: 20px; align-items: center;">
+            <img 
+              src="${item.image}" 
+              alt="${item.name}" 
+              style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;" 
+            />
+            <div style="padding-left: 15px;">
+              <p style="margin: 0; font-weight: 600; font-size: 16px; color: #222;">
+                ${item.name}
+              </p>
+              ${item.size ? `<p style="margin: 4px 0 0 0; font-size: 14px; color: #666;">Size: ${item.size}</p>` : ''}
+
+              ${item.description ? `<p style="margin: 4px 0 0 0; font-size: 14px; color: #666;">${item.description}</p>` : ''}
+              <p style="margin: 6px 0 0 0; font-size: 14px; color: #444;">
+                Quantity: ${item.quantity}<br/>
+                Price per unit: ${(item.price / 100).toFixed(2)} ${currency}
+              </p>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+
+      <p style="font-size: 16px; font-weight: 600; margin-top: 20px;">
+        Shipping (Tracked): ${(shippingCostCents / 100).toFixed(2)} ${currency}
+      </p>
+      <p style="font-size: 18px; font-weight: 700; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 12px;">
+        Total: ${((totalAmount  ?? 0) / 100).toFixed(2)} ${currency}
+      </p>
+
+      <p style="margin-top: 30px; font-size: 14px; color: #555; line-height: 1.5;">
+        Shipping to:<br/>
+        ${metadata.shipping_name || ''}<br/>
+        ${metadata.shipping_address_line1 || ''}<br/>
+        ${metadata.shipping_address_line2 || ''}<br/>
+        ${metadata.shipping_city || ''}, ${metadata.shipping_state || ''} ${metadata.shipping_postal_code || ''}<br/>
+        ${metadata.shipping_country || ''}
+      </p>
+
+      ${metadata.phone ? `<p style="font-size: 14px; color: #666; margin-top: 10px;">Phone: ${metadata.phone}</p>` : ''}
+
+      <p style="font-size: 14px; color: #555; margin-top: 30px;">
+        If you have any questions or need assistance, please feel free to reach out through our 
+        <a href="https://coconutbuncases.com/contact" target="_blank" style="color: #8819ca; text-decoration: none;">contact page</a>. 
+        We’re happy to help!
+      </p>
+
+      <p style="font-size: 14px; color: #999; margin-top: 40px;">
+        Warm wishes,<br/>
+        The Coconut Bun Cases Team
+      </p>
     </div>
-  `,
+  `
 })
+
 
 
       console.log(`Confirmation email sent to ${customerEmail}`)

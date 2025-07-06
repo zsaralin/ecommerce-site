@@ -32,7 +32,7 @@ function SuccessPageContent() {
         A confirmation email has been sent to your inbox.
       </p>
       <p className="text-sm text-gray-500 mb-6">
-        You’ll receive updates when your order is being prepared and shipped.
+        You’ll receive an update when your order is shipped.
       </p>
       <button
         onClick={() => router.push('/')}

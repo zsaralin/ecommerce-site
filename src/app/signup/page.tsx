@@ -25,13 +25,27 @@ export default function SignupPage() {
 
     try {
       await createUserWithEmailAndPassword(auth, email, password)
-      // User is signed in immediately
-      router.push('/') // change to your desired route
+      router.push('/') // Redirect on success
     } catch (err: any) {
-      if (err.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists.')
-      } else {
-        setError(err.message || 'Signup failed.')
+      // Map Firebase error codes to friendly messages
+      switch (err.code) {
+        case 'auth/email-already-in-use':
+          setError('An account with this email already exists.')
+          break
+        case 'auth/invalid-email':
+          setError('Please enter a valid email address.')
+          break
+        case 'auth/operation-not-allowed':
+          setError('Signup is temporarily disabled. Please try again later.')
+          break
+        case 'auth/weak-password':
+          setError('Password is too weak. Please choose a stronger password.')
+          break
+        default:
+          // For any other unexpected errors, show a generic message
+          setError('Failed to create account. Please try again.')
+          console.error('Signup error:', err)
+          break
       }
     }
   }
@@ -80,7 +94,7 @@ export default function SignupPage() {
           />
           <button
             type="submit"
-            className="w-full bg-[#8819ca] text-white py-2 rounded hover:bg-[#6f14a8] transition"
+            className="w-full bg-[#8819ca] text-white py-2 rounded hover:bg-[#6f14a8] transition cursor-pointer"
           >
             Sign Up
           </button>
