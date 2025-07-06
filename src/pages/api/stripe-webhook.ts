@@ -8,7 +8,7 @@ import getRawBody from 'raw-body'
 export const config = {
   api: { bodyParser: false },
 }
-
+console.log('hi')
 if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
