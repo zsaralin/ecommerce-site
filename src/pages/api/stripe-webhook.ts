@@ -40,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   let buf: Buffer
   try {
-  const buf = await buffer(req)
+   buf = await buffer(req)
   } catch (err) {
     console.error('Error reading raw body:', err)
     return res.status(500).json({ error: 'Error reading request body' })
