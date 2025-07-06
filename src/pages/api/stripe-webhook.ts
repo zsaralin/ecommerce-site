@@ -27,8 +27,6 @@ if (!admin.apps.length) {
   })
 }
 
-const testSnap = await admin.firestore().collection('pendingOrders').limit(1).get()
-console.log('Test Firestore read docs:', testSnap.docs.length)
 const db = admin.firestore()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {})
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string
@@ -64,102 +62,112 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Webhook signature verification failed.', err.message)
     return res.status(400).json({ error: `Webhook Error: ${err.message}` })
   }
-if (event.type === 'checkout.session.completed') {
-  const sessionId = (event.data.object as Stripe.Checkout.Session).id
 
-  // Re-fetch the session to ensure metadata is present
-  const session = await stripe.checkout.sessions.retrieve(sessionId)
+  if (event.type === 'checkout.session.completed') {
+    const sessionId = (event.data.object as Stripe.Checkout.Session).id
 
-  console.log('Retrieved session with metadata:', session.metadata)
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    const metadata = session.metadata || {}
+    const draftId = (metadata.draft_id || '').trim()
 
-  const metadata = session.metadata || {}
-  const draftId = metadata.draft_id
+    if (!draftId) {
+      console.error('No draft ID in metadata.', metadata)
+      return res.status(400).end()
+    }
 
-  if (!draftId) {
-    console.error('No draft ID in metadata.', metadata)
-    return res.status(400).end()
-  }
+    console.log('Looking for draftId in pendingOrders:', draftId)
 
+    const draftQuery = await db
+      .collection('pendingOrders')
+      .where('draftId', '==', draftId)
+      .limit(1)
+      .get()
 
-  const draftRef = db.collection('pendingOrders').doc(draftId)
-  const draftSnap = await draftRef.get()
+    if (draftQuery.empty) {
+      console.error('Draft not found for draftId:', draftId)
+      return res.status(404).end()
+    }
 
-  if (!draftSnap.exists) {
-    console.error('Draft not found.')
-    return res.status(404).end()
-  }
+    const draftSnap = draftQuery.docs[0]
+    const draftData = draftSnap.data() || {}
 
-  const draftData = draftSnap.data() || {}
+    const currency = (session.currency || 'USD').toUpperCase()
+    const customerEmail = session.customer_email || ''
+    const items = Array.isArray(draftData.items) ? draftData.items : []
+const orderDoc = await db.collection('orders').doc(session.id).get()
+if (!orderDoc.exists) {
+    await db.collection('orders').doc(session.id).set({
+      ...draftData,
+      stripeSessionId: session.id,
+      createdAt: Timestamp.now(),
+    })} else {
+  console.log(`Order ${session.id} already exists, skipping duplicate write.`)
+}
 
-  // Set default currency if missing
-  const currency = (session.currency || 'USD').toUpperCase()
+    await draftSnap.ref.delete()
 
-  // Safely get email or fallback
-  const customerEmail = session.customer_email || ''
-
-  // Safe check for items, ensure it's an array
-  const items = Array.isArray(draftData.items) ? draftData.items : []
-
-  await db.collection('orders').doc(session.id).set({
-    ...draftData,
-    stripeSessionId: session.id,
-    createdAt: Timestamp.now(),
-  })
-
-  await draftRef.delete()
-
-  const orderData = {
-    id: session.id,
-    customer_email: customerEmail,
-    amount_total: session.amount_total ?? 0,
-    currency,
-    payment_status: session.payment_status || '',
-    created: new Date((session.created || 0) * 1000),
-    shipping_name: metadata.shipping_name || '',
-    shipping_phone: metadata.shipping_phone || '',
-    shipping_address: {
-      line1: metadata.shipping_address_line1 || '',
-      line2: metadata.shipping_address_line2 || '',
-      city: metadata.shipping_city || '',
-      state: metadata.shipping_state || '',
-      postal_code: metadata.shipping_postal_code || '',
-      country: metadata.shipping_country || '',
-    },
-  }
-
-  // Send confirmation email via Resend
-  try {
-    await resend.emails.send({
-      from: 'coconutbuncases@gmail.com',
-      to: customerEmail,
-      subject: `Order Confirmation - ${session.id}`,
-      html: `
-        <h2>Thank you for your purchase!</h2>
-        <p>Here’s a summary of your order:</p>
-        <ul>
+    try {
+        console.log('Sending confirmation email...')
+await resend.emails.send({
+  from: 'info@coconutbuncases.com',
+  to: customerEmail,
+  subject: 'Order Confirmation',
+  html: `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+      <h2 style="color: #8819ca;">Thank you for your order!</h2>
+      <p>Here’s a summary of your purchase:</p>
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th align="left">Item</th>
+            <th align="center">Qty</th>
+            <th align="right">Price</th>
+          </tr>
+        </thead>
+        <tbody>
           ${items
             .map(
-              (item: any) =>
-                `<li>${item.name} - ${item.quantity} × ${(item.price / 100).toFixed(2)} ${currency}</li>`
+              (item: any) => `
+              <tr style="border-bottom: 1px solid #ddd; padding: 10px 0;">
+                <td style="padding: 10px 0;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;" />
+                    <div>
+                      <div style="font-weight: bold;">${item.name}</div>
+                      ${item.description ? `<div style="font-size: 12px; color: #555;">${item.description}</div>` : ''}
+                      ${item.size ? `<div style="font-size: 12px; color: #555;">Size: ${item.size}</div>` : ''}
+                    </div>
+                  </div>
+                </td>
+                <td align="center">${item.quantity}</td>
+                <td align="right">${(item.price / 100).toFixed(2)} ${currency}</td>
+              </tr>`
             )
             .join('')}
-        </ul>
-<p><strong>Total:</strong> ${((session.amount_total ?? 0) / 100).toFixed(2)} ${currency}</p>
-        <p><strong>Shipping to:</strong><br/>
-          ${metadata.shipping_name || ''}<br/>
-          ${metadata.shipping_address_line1 || ''}<br/>
-          ${metadata.shipping_address_line2 || ''}<br/>
-          ${metadata.shipping_city || ''}, ${metadata.shipping_state || ''}, ${metadata.shipping_postal_code || ''}<br/>
-          ${metadata.shipping_country || ''}
-        </p>
-        <p>If you have any questions, reply to this email.</p>
-      `,
-    })
-    console.log(`Confirmation email sent to ${customerEmail}`)
-  } catch (error) {
-    console.error('Error sending email:', error)
+        </tbody>
+      </table>
+
+      <p style="margin-top: 24px;"><strong>Total:</strong> ${(session.amount_total! / 100).toFixed(2)} ${currency}</p>
+
+      <p><strong>Shipping to:</strong><br/>
+        ${metadata.shipping_name}<br/>
+        ${metadata.shipping_address_line1}<br/>
+        ${metadata.shipping_address_line2 || ''}<br/>
+        ${metadata.shipping_city}, ${metadata.shipping_state} ${metadata.shipping_postal_code}<br/>
+        ${metadata.shipping_country}
+      </p>
+
+      <p style="font-size: 12px; color: #888;">If you have any questions, feel free to reply to this email.</p>
+    </div>
+  `,
+})
+
+
+      console.log(`Confirmation email sent to ${customerEmail}`)
+    } catch (error) {
+      console.error('Error sending email:', error)
+    }
   }
-}
 
   res.status(200).json({ received: true })
 }

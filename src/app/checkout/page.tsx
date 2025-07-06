@@ -103,13 +103,17 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   try {
     // Minimal adjusted items for DB (pending order)
-    const adjustedItems = items.map(item => ({
-      id: item.id,
-      quantity: item.quantity, // fixed typo: quantitiy => quantity
-      price: Math.round(getConvertedPrice(item.price, currency)), // cents in current currency
-      description: item.description || '',
-      size: item.size,
-    }))
+   const adjustedItems = items.map(item => ({
+  id: item.id,
+  name: item.name,
+  image: item.image.startsWith('http')
+    ? item.image
+    : `${process.env.NEXT_PUBLIC_BASE_URL}${item.image}`,
+  quantity: item.quantity,
+  price: Math.round(getConvertedPrice(item.price, currency)),
+  description: item.description || '',
+  size: item.size,
+}))
     console.log(items)
     // Full items for Stripe Checkout API (with images + name)
     const checkoutItems = items.map(item => ({
@@ -228,6 +232,8 @@ const handleSubmit = async (e: React.FormEvent) => {
               onChange={handleChange}
               required
               className="w-full border border-gray-600 rounded px-3 py-2 bg-transparent"
+  autoComplete="email"
+
             />
           </div>
 

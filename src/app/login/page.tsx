@@ -75,6 +75,7 @@ export default function LoginPage() {
             className="w-full px-4 py-2 border rounded"
             required
             autoComplete="email"
+            
           />
           <input
             type="password"
