@@ -10,6 +10,7 @@ const messages = [
   'the first durable sticker case',
   'US Customers - Tariffs will not affect you',
 ]
+console.log('test')
 
 export default function TopInfoBar() {
   const [index, setIndex] = useState(0)
