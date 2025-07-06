@@ -40,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   let buf: Buffer
   try {
-   const buf = await getRawBody(req)
+  buf = await getRawBody(req)
 
   } catch (err) {
     console.error('Error reading raw body:', err)
