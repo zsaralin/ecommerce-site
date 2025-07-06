@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import admin from 'firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
-import { buffer } from 'micro'
+import getRawBody from 'raw-body'
 
 export const config = {
   api: { bodyParser: false },
@@ -40,7 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   let buf: Buffer
   try {
-   buf = await buffer(req)
+   const buf = await getRawBody(req)
+
   } catch (err) {
     console.error('Error reading raw body:', err)
     return res.status(500).json({ error: 'Error reading request body' })
