@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import admin from 'firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
+import getRawBody from 'raw-body'
 
 export const config = {
   api: { bodyParser: false },
@@ -32,14 +33,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {})
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const getRawBody = (req: NextApiRequest): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = []
-    req.on('data', (chunk) => chunks.push(chunk))
-    req.on('end', () => resolve(Buffer.concat(chunks)))
-    req.on('error', (err) => reject(err))
-  })
-}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
