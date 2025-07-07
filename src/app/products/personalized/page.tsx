@@ -5,18 +5,19 @@ import { products } from '@/lib/products'
 import { useCart } from '@/context/CartContext'
 import { useCurrency } from '@/context/CurrencyContext'
 import { getConvertedPrice } from '@/lib/pricing'
-import {phoneModels} from '@/lib/phoneModels'
+import { phoneModels } from '@/lib/phoneModels'
 import { useRouter } from 'next/navigation'
 
 export default function PersonalizedPage() {
   const product = products.find((p) => p.id === 'personalized')
   const { addToCart, clearCart } = useCart()
   const { currency } = useCurrency()
-const router = useRouter()
+  const router = useRouter()
 
   const [quantity, setQuantity] = useState(1)
   const [phoneModel, setPhoneModel] = useState('')
   const [vibeInput, setVibeInput] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta))
@@ -26,16 +27,31 @@ const router = useRouter()
 
   const convertedPrice = getConvertedPrice(product.price, currency)
 
-const handleBuyNow = () => {
-  if (!phoneModel || !vibeInput.trim()) return
+  const handleBuyNow = () => {
+    if (!phoneModel || !vibeInput.trim()) {
+      setErrorMessage('Please fill in both parts before continuing.')
+      return
+    }
 
-  clearCart()
-  addToCart(product, quantity, phoneModel, { description: vibeInput })
+    setErrorMessage('')
+    clearCart()
+    addToCart(product, quantity, phoneModel, { description: vibeInput })
 
-  setTimeout(() => {
-    router.push('/checkout')
-  }, 50)
-}
+    setTimeout(() => {
+      router.push('/checkout')
+    }, 50)
+  }
+
+  const handleAddToCart = () => {
+    if (!phoneModel || !vibeInput.trim()) {
+      setErrorMessage('Please fill in both sections before continuing.')
+      return
+    }
+
+    setErrorMessage('')
+    addToCart(product, quantity, phoneModel, { description: vibeInput })
+  }
+
   return (
     <div className="p-6 lg:p-12 max-w-6xl mx-auto">
       <div className="flex flex-col lg:flex-row gap-10 items-start">
@@ -66,8 +82,8 @@ const handleBuyNow = () => {
           </ul>
 
           <p className="text-md text-gray-800">
-  Share anything that captures your universe: comfort foods, niche obsessions, dream aesthetics,
-  fav characters… I’ll do my best to bottle that magic into a phone case.
+            Share anything that captures your universe: comfort foods, niche obsessions, dream aesthetics,
+            fav characters… I’ll do my best to bottle that magic into a phone case.
           </p>
 
           {/* VIBE INPUT */}
@@ -75,9 +91,12 @@ const handleBuyNow = () => {
             <label className="block mb-1 font-medium">tell me about you</label>
             <textarea
               required
-              maxLength={1000} // ✅ Limit to 1000 characters
+              maxLength={1000}
               value={vibeInput}
-              onChange={(e) => setVibeInput(e.target.value)}
+              onChange={(e) => {
+                setVibeInput(e.target.value)
+                if (errorMessage) setErrorMessage('')
+              }}
               placeholder="e.g. I love sushi, Studio Ghibli, roller skating, and pink sparkly vibes"
               className="w-full border border-gray-400 rounded p-3 bg-transparent min-h-[100px]"
             />
@@ -91,8 +110,11 @@ const handleBuyNow = () => {
             <select
               id="phone-model"
               value={phoneModel}
-              onChange={(e) => setPhoneModel(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2"
+              onChange={(e) => {
+                setPhoneModel(e.target.value)
+                if (errorMessage) setErrorMessage('')
+              }}
+              className="border border-gray-300 rounded px-3 py-2 bg-transparent"
             >
               <option value="" disabled>
                 Select a model
@@ -133,21 +155,26 @@ const handleBuyNow = () => {
             </div>
           </div>
 
+          {/* ERROR MESSAGE (Themed style) */}
+          {errorMessage && (
+            <div className="text-sm text-[#ffe5a9] bg-[#8819ca] px-4 py-2 rounded shadow-sm">
+              {errorMessage}
+            </div>
+          )}
+
           {/* ACTION BUTTONS */}
           <div className="mt-6 flex flex-wrap gap-4">
             <button
               type="button"
               onClick={handleBuyNow}
-              disabled={!phoneModel || !vibeInput.trim()}
-              className="bg-black text-white px-6 py-2 rounded shadow-md hover:bg-gray-800 transition cursor-pointer disabled:opacity-40"
+              className="bg-black text-white px-6 py-2 rounded shadow-md hover:bg-gray-800 transition cursor-pointer"
             >
               Buy Now
             </button>
             <button
               type="button"
-              onClick={() => addToCart(product, quantity, phoneModel, { description: vibeInput })}
-              disabled={!phoneModel || !vibeInput.trim()}
-              className="border border-black text-black px-6 py-2 rounded shadow-md hover:bg-gray-100 transition cursor-pointer disabled:opacity-40"
+              onClick={handleAddToCart}
+              className="border border-black text-black px-6 py-2 rounded shadow-md hover:bg-gray-100 transition cursor-pointer"
             >
               Add to Cart
             </button>

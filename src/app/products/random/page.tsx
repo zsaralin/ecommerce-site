@@ -12,10 +12,11 @@ export default function RandomPage() {
   const product = products.find((p) => p.id === 'random')
   const { addToCart, clearCart } = useCart()
   const { currency } = useCurrency()
-const router = useRouter()
+  const router = useRouter()
 
   const [quantity, setQuantity] = useState(1)
-  const [phoneModel, setPhoneModel] = useState(phoneModels[0])
+  const [phoneModel, setPhoneModel] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta))
@@ -24,16 +25,31 @@ const router = useRouter()
   if (!product) return <div>Product not found.</div>
   const convertedPrice = getConvertedPrice(product.price, currency)
 
-const handleBuyNow = () => {
-  if (!phoneModel) return
+  const handleBuyNow = () => {
+    if (!phoneModel) {
+      setErrorMessage('Please select your phone model before continuing.')
+      return
+    }
 
-  clearCart()
-  addToCart(product, quantity, phoneModel)
+    setErrorMessage('')
+    clearCart()
+    addToCart(product, quantity, phoneModel)
 
-  setTimeout(() => {
-    router.push('/checkout')
-  }, 50)
-}
+    setTimeout(() => {
+      router.push('/checkout')
+    }, 50)
+  }
+
+  const handleAddToCart = () => {
+    if (!phoneModel) {
+      setErrorMessage('Please select your phone model before continuing.')
+      return
+    }
+
+    setErrorMessage('')
+    addToCart(product, quantity, phoneModel)
+  }
+
   return (
     <main className="max-w-5xl mx-auto p-8">
       <div className="flex flex-col md:flex-row gap-12 items-center">
@@ -74,6 +90,9 @@ const handleBuyNow = () => {
               onChange={(e) => setPhoneModel(e.target.value)}
               className="border border-gray-300 rounded px-3 py-2"
             >
+              <option value="" disabled>
+                Select a model
+              </option>
               {phoneModels.map((model) => (
                 <option key={model} value={model}>
                   {model}
@@ -81,6 +100,13 @@ const handleBuyNow = () => {
               ))}
             </select>
           </div>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="text-sm text-[#ffe5a9] bg-[#8819ca] px-4 py-2 rounded shadow-sm">
+              {errorMessage}
+            </div>
+          )}
 
           {/* Quantity Selector */}
           <div className="flex items-center gap-4">
@@ -121,8 +147,8 @@ const handleBuyNow = () => {
             </button>
             <button
               type="button"
+              onClick={handleAddToCart}
               className="border border-black text-black px-6 py-2 rounded hover:bg-gray-100 cursor-pointer"
-              onClick={() => addToCart(product, quantity, phoneModel)}
             >
               Add to Cart
             </button>

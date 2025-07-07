@@ -379,13 +379,16 @@ if (
             {currency.symbol}{(itemsTotalCents / 100).toFixed(2)} 
           </span>
         </div>
-          <div className="flex justify-between mb-2">
-  <div>
-    <span className="block">Shipping</span>
-    <span className="block text-xs text-gray-400">{shippingMethod.name}</span>
-  </div>
-  <span>{currency.symbol}{(shippingCostCents / 100).toFixed(2)}</span>
-</div>
+
+{countrySelected && (
+              <div className="flex justify-between mb-2">
+                <div>
+                  <span className="block">Shipping</span>
+                  <span className="block text-xs text-gray-400">{shippingMethod.name}</span>
+                </div>
+                <span>{currency.symbol}{(shippingCostCents / 100).toFixed(2)}</span>
+              </div>
+            )}
         <div className="flex justify-between font-bold">
           <span>Total</span>
           <span>
