@@ -9,7 +9,7 @@ import { db } from '@/lib/firebase'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import { v4 as uuidv4 } from 'uuid'
 import CountrySelect from '@/components/CountrySelect'
-
+console.log('hi')
 export default function DeliveryPage() {
   const context = useContext(CartContext)
   const { currency } = useCurrency()
