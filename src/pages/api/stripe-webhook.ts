@@ -8,7 +8,6 @@ import getRawBody from 'raw-body'
 export const config = {
   api: { bodyParser: false },
 }
-console.log('hi')
 if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
@@ -108,7 +107,8 @@ if (!orderDoc.exists) {
 const totalAmount = Number(session.amount_total) || 0;
 await resend.emails.send({
   from: 'Coconut Bun Cases <no-reply@coconutbuncases.com>',
-  to: 'customerEmail, coconutbuncases@gmail.com',
+  to: customerEmail,
+  bcc: 'coconutbuncases@gmail.com',
   subject: `Order Confirmation`,
   html: `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px;">
