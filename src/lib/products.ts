@@ -12,14 +12,14 @@ export const products: Product[] = [
     name: 'Personalized',
     href: '/products/personalized',
     price: 3200, // in cents
-    image: '/images/example-0.png'
+    image: '/images/example-0.webp'
     },
   {
     id: 'random',
     name: 'Blind Box',
     href: '/products/random',
     price: 2199,
-    image: '/images/example-0.png',
+    image: '/images/example-0.webp',
   },
 ];
 

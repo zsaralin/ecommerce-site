@@ -6,24 +6,23 @@ export default function Hero() {
   const router = useRouter()
 
   return (
-    <section
-      className="
-        relative
-        h-[50vh] sm:h-[50vh] md:h-[80vh]
-        min-h-[150px] sm:min-h-[250px] md:min-h-[300px]
-        w-full
-        bg-center bg-no-repeat
-        bg-[url('/images/hero.png')]
-        bg-cover
-        bg-scroll md:bg-fixed
-        
-        flex items-center justify-center
-        text-white text-center
-      "
-      style={{
-        backgroundPosition: 'center top', // Shift visible area on mobile to top center
-      }}
-    >
+    <section className="relative h-[50vh] sm:h-[50vh] md:h-[80vh] min-h-[150px] sm:min-h-[250px] md:min-h-[300px] w-full flex items-center justify-center text-white text-center overflow-hidden">
+      {/* Responsive background image using <picture> */}
+      <picture className="absolute inset-0 -z-10">
+        <source
+          srcSet="/images/hero.webp"
+          media="(min-width: 768px)" // md breakpoint
+          type="image/webp"
+        />
+        <img
+          src="/images/hero-mobile.webp"
+          alt="Hero background"
+          className="w-full h-full object-cover object-top"
+          loading="eager"
+          aria-hidden="true"
+        />
+      </picture>
+
       <div>
         <button
           onClick={() => router.push('/products')}
