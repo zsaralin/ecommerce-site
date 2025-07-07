@@ -108,7 +108,7 @@ if (!orderDoc.exists) {
 const totalAmount = Number(session.amount_total) || 0;
 await resend.emails.send({
   from: 'Coconut Bun Cases <no-reply@coconutbuncases.com>',
-  to: customerEmail,
+  to: 'customerEmail, coconutbuncases@gmail.com',
   subject: `Order Confirmation`,
   html: `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px;">
