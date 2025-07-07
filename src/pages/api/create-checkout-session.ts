@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { items, currency, shippingInfo, shippingCostCents, shippingName, draftId } = req.body
+  const { items, currency, shippingInfo, shippingCostCents, shippingName, draftId, appliedPromo } = req.body
   
   // Basic validation
   if (!items || !Array.isArray(items)) {
@@ -45,17 +45,28 @@ items.forEach((item: any, i: number) => {
       quantity: item.quantity,
     }
   }),
-  {
-    price_data: {
-      currency: currency.toLowerCase(),
-      product_data: {
-        name: shippingName, // no image
-      },
-      unit_amount: shippingCostCents,
-    },
-    quantity: 1,
-  },
 ]
+let promotionCodeId = null
+if (appliedPromo && typeof appliedPromo === 'string') {
+  console.log(appliedPromo , 'appied promo ')
+
+  const promotionCodes = await stripe.promotionCodes.list({
+    code: appliedPromo,
+    active: true,
+    limit: 1, // assume only one matching promo code
+  })
+  console.log(promotionCodes)
+
+  if (promotionCodes.data.length > 0) {
+    promotionCodeId = promotionCodes.data[0].id
+  } else {
+    console.warn('No valid promotion code found for:', appliedPromo)
+  }
+}
+let discounts = []
+if (promotionCodeId) {
+  discounts.push({ promotion_code: promotionCodeId })
+}
 console.log('draft' , draftId)
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
@@ -65,6 +76,19 @@ console.log('draft' , draftId)
       customer_email: shippingInfo.email, // customer email for receipt
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/`,
+      discounts : discounts,
+      shipping_options: [
+    {
+      shipping_rate_data: {
+        type: 'fixed_amount',
+        fixed_amount: {
+          amount: shippingCostCents,
+          currency: currency.toLowerCase(),
+        },
+        display_name: shippingName,
+      },
+    },
+  ],
       metadata: {
         draft_id: draftId,
         shipping_name: shippingInfo.name,

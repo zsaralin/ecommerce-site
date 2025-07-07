@@ -42,7 +42,7 @@ export default function FAQ() {
           <p className="mt-4">
             <strong>Processing Times</strong>
             <br />
-            Please allow 4–10 days for your order to be processed before it ships out. I’m a
+            Please allow 2-4 days for your order to be processed before it ships out. I’m a
             one-person team handling every part of this business myself, and for personalized cases,
             I often have to go out and buy new stickers just for your order. I really appreciate your
             patience and understanding — it means the world to me!
@@ -81,7 +81,7 @@ export default function FAQ() {
           style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
           aria-hidden={!openDropdowns.tariffs}
         >
-          <p className="mt-4">US Customers will not be affected by tariffs.</p>
+          <p className="mt-4">We're based in Canada, but U.S. customers won’t have to pay tariffs or import duties (U.S. de minimis threshold).</p>
         </div>
       </div>
     </main>

@@ -8,18 +8,18 @@ export default function Hero() {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    const handleResize = () => {
+    const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
 
-    handleResize() // initial check
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    checkMobile() // Initial run
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  const backgroundImage = isMobile
-    ? "url('/images/hero-mobile.webp')"
-    : "url('/images/hero.webp')"
+  const bgImage = isMobile
+    ? "/images/hero-mobile.webp"
+    : "/images/hero.webp"
 
   return (
     <section
@@ -30,13 +30,12 @@ export default function Hero() {
         w-full
         flex items-center justify-center
         text-white text-center
-        bg-no-repeat bg-cover
-        bg-center
-        bg-fixed
+        bg-no-repeat bg-cover bg-center
+        ${isMobile ? '' : 'bg-fixed'}
       `}
       style={{
-        backgroundImage,
-        backgroundPosition: 'center top', // mobile-friendly position
+        backgroundImage: `url('${bgImage}')`,
+        backgroundPosition: isMobile ? 'center top' : 'center center',
       }}
     >
       <div>

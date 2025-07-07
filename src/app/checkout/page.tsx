@@ -27,6 +27,18 @@ export default function DeliveryPage() {
     postalCode: '',
   })
 
+const PROMO_CODES = {
+  SAVE50: 50,      // 10% off
+  // SAVE20: 20,      // 20% off
+  // FREESHIP: 'FREESHIP',
+} as const
+
+type PromoCodeKey = keyof typeof PROMO_CODES
+
+  const [promoCode, setPromoCode] = useState<string>('')
+  const [appliedPromo, setAppliedPromo] = useState<PromoCodeKey | null>(null)
+  const [promoError, setPromoError] = useState<string>('')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -49,8 +61,19 @@ export default function DeliveryPage() {
     (sum, item) => sum + getConvertedPrice(item.price, currency) * item.quantity,
     0
   )
+  // Apply promo code discount if any
+  let discountCents = 0
+  if (appliedPromo) {
+    const promoVal = PROMO_CODES[appliedPromo]
+    if (typeof promoVal === 'number') {
+      // Percent discount on items total
+      discountCents = Math.round((itemsTotalCents * promoVal) / 100)
+    }
+    // For FREESHIP promo you can handle shipping discount here (not implemented)
+  }
+const grandTotalCents = itemsTotalCents - discountCents + shippingCostCents
 
-  const grandTotalCents = itemsTotalCents + shippingCostCents
+  
   const countries = getNames()
 
   const handleChange = (
@@ -58,7 +81,30 @@ export default function DeliveryPage() {
   ) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
+const handlePromoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPromoCode(e.target.value.toUpperCase())
+    setPromoError('')
+  }
 
+  const applyPromo = () => {
+    const code = promoCode.toUpperCase() as PromoCodeKey
+    if (appliedPromo) {
+      setPromoError('Only one promo code can be applied.')
+      return
+    }
+    if (!(code in PROMO_CODES)) {
+      setPromoError('Promo code does not exist.')
+      return
+    }
+    setAppliedPromo(code)
+    setPromoError('')
+  }
+
+  const removePromo = () => {
+    setAppliedPromo(null)
+    setPromoCode('')
+    setPromoError('')
+  }
   // Helper to truncate description text
   function truncate(text: string, maxLength: number) {
     if (text.length <= maxLength) return text
@@ -157,6 +203,8 @@ if (
         shippingCostCents,
         shippingName: shippingMethod.name,
         draftId,
+        appliedPromo, // 👈 add this
+
       }),
     })
 
@@ -370,6 +418,51 @@ if (
           </li>
         ))}
       </ul>
+ {/* Promo Code Section */}
+        <div>
+  <label htmlFor="promoCode" className="block mb-1"></label>
+  {appliedPromo ? (
+    <div className="flex items-center gap-3 my-6 text-sm">
+      <span className="font-semibold">{appliedPromo}</span>
+      <button
+        type="button"
+        onClick={removePromo}
+        className="text-gray-600 hover:underline cursor-pointer"
+      >
+        Remove
+      </button>
+    </div>
+  ) : (
+    <div className="flex gap-2 my-6 text-sm">
+      <input
+        id="promoCode"
+        name="promoCode"
+        type="text"
+        value={promoCode}
+        onChange={handlePromoChange}
+        className="flex-grow border border-gray-600 rounded px-3 py-2 bg-transparent"
+        placeholder="Promo code"
+      />
+      <button
+        type="button"
+        onClick={applyPromo}
+        disabled={promoCode.trim() === ''}
+        className={`px-4 py-2 rounded text-white transition ${
+          promoCode.trim() === ''
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-purple-600 hover:bg-purple-800 cursor-pointer'
+        }`}
+      >
+        Apply
+      </button>
+    </div>
+  )}
+  {promoError && (
+    <p className="text-gray-600 font-semibold mt-1">{promoError}</p>
+  )}
+</div>
+
+{error && <p className="text-gray-600 font-semibold">{error}</p>}
 
       {/* Totals */}
       <div className="mt-6 border-t border-gray-600 pt-4 space-y-2 text-sm">
@@ -379,7 +472,12 @@ if (
             {currency.symbol}{(itemsTotalCents / 100).toFixed(2)} 
           </span>
         </div>
-
+{discountCents > 0 && (
+  <div className="flex justify-between text-purple-600">
+    <span>Discount ({appliedPromo})</span>
+    <span>-{currency.symbol}{(discountCents / 100).toFixed(2)}</span>
+  </div>
+)}
 {countrySelected && (
               <div className="flex justify-between mb-2">
                 <div>
@@ -396,6 +494,7 @@ if (
           </span>
         </div>
       </div>
+      
     </section>
   </div>
 </main>
