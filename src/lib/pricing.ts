@@ -7,7 +7,7 @@ export function getConvertedPrice(price: number, currency: Currency): number {
   const hardcodedPrices: Record<number, Record<string, number>> = {
     2599: {
       USD: 2599,
-      CAD: 3500,
+      CAD: 3499,
       GBP: 1899,
       EUR: 2199,
       AUD: 3999,
@@ -20,7 +20,7 @@ export function getConvertedPrice(price: number, currency: Currency): number {
       USD: 2199,
       GBP: 1699,
       EUR: 1899,
-      CAD: 3000,
+      CAD: 2999,
       AUD: 3499,
       NZD: 3699,
       JPY: 3399,

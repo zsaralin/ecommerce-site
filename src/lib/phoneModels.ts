@@ -1,5 +1,8 @@
 export const phoneModels = [
-  'iPhone 15 Pro Max',
+  'iPhone 16 Pro Max',
+    'iPhone 16 Pro',
+  'iPhone 16',
+    'iPhone 15 Pro Max',
   'iPhone 15 Pro',
   'iPhone 15',
   'iPhone 15 Plus',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { CartContext, CartItem } from '@/context/CartContext'
 import { useCurrency } from '@/context/CurrencyContext'
 import { getNames, getCode } from 'country-list'
@@ -9,7 +9,8 @@ import { db } from '@/lib/firebase'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import { v4 as uuidv4 } from 'uuid'
 import CountrySelect from '@/components/CountrySelect'
-console.log('hi')
+import { SHIPPING_METHODS, getShippingOptions } from '@/lib/shipping'
+
 export default function DeliveryPage() {
   const context = useContext(CartContext)
   const { currency } = useCurrency()
@@ -28,7 +29,7 @@ export default function DeliveryPage() {
   })
 
 const PROMO_CODES = {
-  SAVE50: 50,      // 10% off
+  SAVE25: 25,      // 10% off
   // SAVE20: 20,      // 20% off
   // FREESHIP: 'FREESHIP',
 } as const
@@ -45,18 +46,21 @@ type PromoCodeKey = keyof typeof PROMO_CODES
   if (!context) throw new Error('CartContext is missing')
   const { items } = context
 
-  const SHIPPING_METHODS = {
-    trackedCanada: { name: '(Tracked Canada)', cost: 600 }, // cents
-    trackedInternational: { name: '(Tracked International)', cost: 900 },
+const [selectedShipping, setSelectedShipping] = useState<string | null>(null)
+useEffect(() => {
+  if (shippingOptions.length > 0) {
+    setSelectedShipping(shippingOptions[0].name)
   }
-
+}, [form.country, items])
   const countrySelected = form.country !== ''
-  const countryCode = getCode(form.country) || ''
-  const shippingMethod = countryCode === 'CA' ? SHIPPING_METHODS.trackedCanada : SHIPPING_METHODS.trackedInternational
+const shippingOptions = countrySelected ? getShippingOptions(form.country, items) : []
 
-  const shippingCostCents = countrySelected
-    ? Math.floor(getConvertedPrice(shippingMethod.cost, currency) / 100) * 100
-    : 0
+const shippingMethod = shippingOptions.find(
+  option => option.name === selectedShipping
+) || shippingOptions[0]
+const shippingCostCents = countrySelected
+  ? Math.round(getConvertedPrice(shippingMethod.cost, currency) / 100) * 100
+  : 0
   const itemsTotalCents = items.reduce(
     (sum, item) => sum + getConvertedPrice(item.price, currency) * item.quantity,
     0
@@ -478,15 +482,39 @@ if (
     <span>-{currency.symbol}{(discountCents / 100).toFixed(2)}</span>
   </div>
 )}
-{countrySelected && (
-              <div className="flex justify-between mb-2">
-                <div>
-                  <span className="block">Shipping</span>
-                  <span className="block text-xs text-gray-400">{shippingMethod.name}</span>
-                </div>
-                <span>{currency.symbol}{(shippingCostCents / 100).toFixed(2)}</span>
-              </div>
-            )}
+{countrySelected && shippingOptions.length > 1 ? (
+  <div className="mb-4">
+    <label htmlFor="shipping" className="block mb-1 text-sm font-medium">Shipping Method</label>
+    <select
+      id="shipping"
+      name="shipping"
+      value={selectedShipping ?? ''}
+      onChange={(e) => setSelectedShipping(e.target.value)}
+      className="w-full border border-gray-600 rounded px-3 py-2 bg-transparent"
+    >
+      {shippingOptions.map((option) => {
+  const rawCents = getConvertedPrice(option.cost, currency)
+  const roundedCents = Math.round(rawCents / 100) * 100 // e.g., 8040 -> 8000
+  return (
+    <option key={option.name} value={option.name}>
+      {option.name} —{currency.symbol}{(roundedCents / 100).toFixed(2)}
+    </option>
+  )
+})}
+    </select>
+  </div>
+) : (
+  countrySelected && (
+    <div className="flex justify-between mb-2">
+      <div>
+        <span className="block">Shipping</span>
+        <span className="block text-xs text-gray-400">{shippingMethod.name}</span>
+      </div>
+      <span>{currency.symbol}{(shippingCostCents / 100)}</span>
+    </div>
+  )
+)}
+
         <div className="flex justify-between font-bold">
           <span>Total</span>
           <span>

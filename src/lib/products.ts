@@ -11,7 +11,7 @@ export const products: Product[] = [
     id: 'personalized',
     name: 'Personalized',
     href: '/products/personalized',
-    price: 3200, // in cents
+    price: 2599, // in cents
     image: '/images/example-0.webp'
     },
   {
