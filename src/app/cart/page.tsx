@@ -48,7 +48,7 @@ export default function CartPage() {
 
       <ul className="space-y-4">
         {items.map((item: CartItem) => {
-          const { id, image, name, price, quantity, size, description = '' } = item
+          const { id, images, name, price, quantity, size, description = '' } = item
           const isExpanded = expandedNotes[id]
           const isEditing = editingNotes[id]
           const tempText = editingTexts[id] ?? description
@@ -59,7 +59,7 @@ export default function CartPage() {
               <div className="flex items-center gap-4 min-w-0 w-full">
                 {/* Image */}
                 <img
-                  src={image}
+                  src={images[0]}
                   alt={name}
                   className="w-20 h-20 object-cover rounded flex-shrink-0"
                 />

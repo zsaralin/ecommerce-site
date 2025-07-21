@@ -7,6 +7,7 @@ import { useCurrency } from '@/context/CurrencyContext'
 import { getConvertedPrice } from '@/lib/pricing'
 import { phoneModels } from '@/lib/phoneModels'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function RandomPage() {
   const product = products.find((p) => p.id === 'random')
@@ -17,6 +18,7 @@ export default function RandomPage() {
   const [quantity, setQuantity] = useState(1)
   const [phoneModel, setPhoneModel] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta))
@@ -53,13 +55,32 @@ export default function RandomPage() {
   return (
     <main className="max-w-5xl mx-auto p-8">
       <div className="flex flex-col md:flex-row gap-12 items-center">
-        {/* IMAGE */}
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full max-w-md rounded-lg object-cover"
-          style={{ flexShrink: 0 }}
-        />
+        <div className="flex flex-col gap-4">
+  {/* Main Image */}
+<Image
+  src={product.images[selectedImageIndex]}
+  alt={product.name}
+  width={600} // or whatever suits your layout
+  height={600}
+  className="w-full max-w-md rounded-lg object-cover"
+  style={{ flexShrink: 0 }}
+  priority
+/>
+  {/* Thumbnails */}
+  <div className="flex gap-2">
+    {product.images.map((img, idx) => (
+      <button
+        key={idx}
+        onClick={() => setSelectedImageIndex(idx)}
+        className={`w-16 h-16 border rounded overflow-hidden ${
+          selectedImageIndex === idx ? 'border-black' : 'border-gray-300'
+        }`}
+      >
+        <img src={img} alt={`Thumbnail ${idx}`} className="object-cover w-full h-full cursor-pointer" />
+      </button>
+    ))}
+  </div>
+</div>
 
         {/* DESCRIPTION & DETAILS */}
         <div className="md:flex-1 space-y-6">

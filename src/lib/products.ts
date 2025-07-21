@@ -3,7 +3,7 @@ export type Product = {
   name: string
   href: string,
   price: number
-  image: string
+  images: string[] // <-- fix here
 }
 
 export const products: Product[] = [
@@ -12,14 +12,16 @@ export const products: Product[] = [
     name: 'Personalized',
     href: '/products/personalized',
     price: 2599, // in cents
-    image: '/images/example-0.webp'
+    images: ['/images/personalized-0.png', '/images/personalized-1.png',
+      '/images/personalized-2.png', '/images/personalized-3.png'
+    ]
     },
   {
     id: 'random',
     name: 'Blind Box',
     href: '/products/random',
     price: 2199,
-    image: '/images/example-0.webp',
+    images: ['/images/random-0.png'],
   },
 ];
 

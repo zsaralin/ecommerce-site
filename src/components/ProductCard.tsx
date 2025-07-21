@@ -30,7 +30,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Image container with overflow-hidden */}
       <div className="overflow-hidden rounded-md">
         <img
-          src={product.image}
+          src={product.images[0]}
           alt={product.name}
           className="rounded-md transform transition-transform duration-300 ease-in-out group-hover:scale-105"
         />

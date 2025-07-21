@@ -163,9 +163,9 @@ if (
    const adjustedItems = items.map(item => ({
   id: item.id,
   name: item.name,
-  image: item.image.startsWith('http')
-    ? item.image
-    : `${process.env.NEXT_PUBLIC_BASE_URL}${item.image}`,
+  image: item.images[0].startsWith('http')
+    ? item.images[0]
+    : `${process.env.NEXT_PUBLIC_BASE_URL}${item.images[0]}`,
   quantity: item.quantity,
   price: Math.round(getConvertedPrice(item.price, currency)),
   description: item.description || '',
@@ -176,9 +176,9 @@ if (
     const checkoutItems = items.map(item => ({
       name: item.name,
       images: [
-  item.image.startsWith('http')
-    ? item.image
-    : `${process.env.NEXT_PUBLIC_BASE_URL}${item.image}`,
+  item.images[0].startsWith('http')
+    ? item.images[0]
+    : `${process.env.NEXT_PUBLIC_BASE_URL}${item.images[0]}`,
 ],
       price: Math.round(getConvertedPrice(item.price, currency)),
       quantity: item.quantity,
@@ -401,7 +401,7 @@ if (
               <li key={`${item.id}-${item.size ?? ''}-${item.description ?? ''}`} className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <img
-                    src={item.image}
+                    src={item.images[0]}
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded"
                   />

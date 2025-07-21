@@ -7,6 +7,7 @@ import { useCurrency } from '@/context/CurrencyContext'
 import { getConvertedPrice } from '@/lib/pricing'
 import { phoneModels } from '@/lib/phoneModels'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function PersonalizedPage() {
   const product = products.find((p) => p.id === 'personalized')
@@ -18,6 +19,7 @@ export default function PersonalizedPage() {
   const [phoneModel, setPhoneModel] = useState('')
   const [vibeInput, setVibeInput] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta))
@@ -55,16 +57,32 @@ export default function PersonalizedPage() {
   return (
     <div className="p-6 lg:p-12 max-w-6xl mx-auto">
       <div className="flex flex-col lg:flex-row gap-10 items-start">
-        {/* IMAGE */}
-        <div className="w-full lg:w-1/2 flex justify-center">
-          <div className="w-full max-w-md lg:aspect-[3/4] relative">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-auto object-contain rounded-lg shadow-md"
-            />
-          </div>
-        </div>
+       <div className="flex flex-col gap-4">
+      {/* Main Image */}
+<Image
+  src={product.images[selectedImageIndex]}
+  alt={product.name}
+  width={600} // or whatever suits your layout
+  height={600}
+  className="w-full max-w-md rounded-lg object-cover"
+  style={{ flexShrink: 0 }}
+  priority
+/>
+      {/* Thumbnails */}
+      <div className="flex gap-2">
+        {product.images.map((img, idx) => (
+          <button
+            key={idx}
+            onClick={() => setSelectedImageIndex(idx)}
+            className={`w-16 h-16 border rounded overflow-hidden ${
+              selectedImageIndex === idx ? 'border-black' : 'border-gray-300'
+            }`}
+          > 
+            <img src={img} alt={`Thumbnail ${idx}`} className="object-cover w-full h-full cursor-pointer" />
+          </button>
+        ))}
+      </div>
+    </div>
 
         {/* CONTENT */}
         <div className="w-full lg:w-1/2 space-y-6">

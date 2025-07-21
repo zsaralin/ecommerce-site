@@ -48,7 +48,7 @@ export default function TopInfoBar() {
 <div className="top-info-bar text-xs px-4 py-2 flex justify-center items-center relative">
 
       {/* Instagram icon link */}
-      <a
+      {/* <a
         href="https://www.instagram.com/coconutbuncases"
         target="_blank"
         rel="noopener noreferrer"
@@ -56,7 +56,7 @@ export default function TopInfoBar() {
         aria-label="Visit our Instagram"
       >
         <Instagram size={18} />
-      </a>
+      </a> */}
 
       {/* Left arrow */}
       <button
