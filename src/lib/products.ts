@@ -12,8 +12,8 @@ export const products: Product[] = [
     name: 'Personalized',
     href: '/products/personalized',
     price: 2599, // in cents
-    images: ['/images/personalized-0.png', '/images/personalized-1.png',
-      '/images/personalized-2.png', '/images/personalized-3.png'
+    images: ['/images/personalized-0.webp', '/images/personalized-1.webp',
+      '/images/personalized-2.webp', '/images/personalized-3.webp'
     ]
     },
   {
@@ -21,7 +21,7 @@ export const products: Product[] = [
     name: 'Blind Box',
     href: '/products/random',
     price: 2199,
-    images: ['/images/random-0.png'],
+    images: ['/images/random-0.webp'],
   },
 ];
 
